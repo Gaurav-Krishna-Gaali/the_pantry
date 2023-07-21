@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, flash
-from forms import LoginForm, NamForm,RegistrationForm
+from forms import LoginForm, NamForm,RegistrationForm,PasswordForm
 from flask_login import UserMixin, login_user, login_required, logout_user, current_user, LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -52,18 +52,25 @@ def index():
     return render_template('base.html')
 
 
-@app.route('/name', methods=['GET','POST'])
-def name():
-    name = None
+@app.route('/test_pwd', methods=['GET','POST'])
+def test_pwd():
     email = None
-    form = NamForm();
+    password = None
+    pw_to_check = None
+    passed = None
+    form = PasswordForm()
     # Validation
     if form.validate_on_submit():
-        name = form.name.data
         email = form.email.data
-        form.name, form.email = '',''
-        flash('Form submitted Successfully')
-    return render_template('user.html', name=name,email= email, form=form)
+        password = form.password_hash.data
+        form.password, form.email = '',''
+
+        pw_to_check = Test.query.filter_by(email=email).first()
+
+        # check hashed password
+        # passed = check_password_hash(pw_to_check.password_hash, password)
+
+    return render_template('user.html', password=password ,email= email,pw_to_check=pw_to_check, form=form , passed=passed)
 
 @app.route('/name/add',methods=['GET','POST'])
 def add_user():

@@ -10,6 +10,10 @@ class NamForm(FlaskForm):
     password_hash2 = PasswordField('Confirm Password', validators=[DataRequired()])
     submit = SubmitField()
 
+class PasswordForm(FlaskForm):
+    email = EmailField('Email',validators=[DataRequired()])
+    password_hash = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField()
 
 class LoginForm(FlaskForm):
     email = EmailField('Email',validators=[DataRequired()])
