@@ -1,15 +1,7 @@
 {%extends 'base.html'%}
 {% block content %}
 
-{% for message in get_flashed_messages() %}
-<div class="alert alert-warning alert-dismissible fade show" role="alert">
-    <strong>Holy guacamole!</strong> You should check in on some of those fields below.
-    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-    </button>
-</div>
-{{message}}
-{% endfor %}
+
 
 <div class="container mt-5">
     {% if email %}

@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, flash
-from forms import LoginForm, NamForm,RegistrationForm,PasswordForm
+from flask import Flask, render_template, request, flash, redirect,url_for
+from forms import LoginForm, RegistrationForm,PasswordForm
 from flask_login import UserMixin, login_user, login_required, logout_user, current_user, LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -16,21 +16,14 @@ app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///data.db'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-# class Users(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     username = db.Column(db.String(200), nullable=False)
-#     email = db.Column(db.String(100), nullable=False, unique=True)
-#     id = db.Column(db.Integer)
-
-# DB Model for Test name
-class Test(db.Model):
+# DB Model for Users name
+class Users(db.Model, UserMixin):
     id  = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200),nullable=False)
+    username = db.Column(db.String(200),nullable=False)
     email = db.Column(db.String(100), nullable=False, unique=True)
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
     # password
     password_hash = db.Column(db.String(128))
-
     @property
     def password(self):
         raise AttributeError('password is not a readable attribute')
@@ -45,15 +38,37 @@ class Test(db.Model):
     def __repr__(self):
         return '<Name %r>' % self.name
 
+class Products(db.Model):
+    productId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(100), nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    description = db.Column(db.String(200))
+    imgage = db.Column(db.String, nullable=False)
+    stock = db.Column(db.Integer)
+    categoryId = db.Column(db.Integer, foreign_keys=True, nullable=False)
+
+
+# Flask Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'Login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return Users.query.get(int(user_id))
 
 
 @app.route('/', methods=['GET','POST'])
+@login_required
 def index():
-    return render_template('base.html')
+    user = None
+    if current_user.is_authenticated:
+        user = current_user
+    return render_template('base.html',user=user)
 
 
-@app.route('/test_pwd', methods=['GET','POST'])
-def test_pwd():
+@app.route('/Users_pwd', methods=['GET','POST'])
+def Users_pwd():
     email = None
     password = None
     pw_to_check = None
@@ -65,73 +80,74 @@ def test_pwd():
         password = form.password_hash.data
         form.password, form.email = '',''
 
-        pw_to_check = Test.query.filter_by(email=email).first()
-
+        pw_to_check = Users.query.filter_by(email=email).first()
         # check hashed password
-        # passed = check_password_hash(pw_to_check.password_hash, password)
+        passed = check_password_hash(pw_to_check.password_hash, password)
 
     return render_template('user.html', password=password ,email= email,pw_to_check=pw_to_check, form=form , passed=passed)
 
-@app.route('/name/add',methods=['GET','POST'])
+@app.route('/register',methods=['GET','POST'])
 def add_user():
-    name = None
-    form = NamForm();
+    username = None
+    user = None
+    form = RegistrationForm()
+    
     if form.validate_on_submit():
-        user = Test.query.filter_by(email=form.email.data).first()
+        user = Users.query.filter_by(email=form.email.data).first()
         if user is  None:
             # hashing password
             hashed_pw = generate_password_hash(form.password_hash.data, "sha256")
-            user = Test(name=form.name.data, email=form.email.data, password_hash=hashed_pw)
+            user = Users(username=form.username.data, email=form.email.data, password_hash=hashed_pw)
             db.session.add(user)
             db.session.commit()
-        name = form.name.data
-        # email = form.email.data
-        form.name.data  =''
+        username = form.username.data
+        form.username.data  =''
         form.email.data = ''
         form.password_hash.data =''
 
         flash("User added Succesful")
-    our_users = Test.query.order_by(Test.date_added)
-    return render_template('add_user.html', form=form, name=name,our_users=our_users)
+    # our_users = Users.query.order_by(Users.date_added)
+    return render_template('add_user.html', form=form, username=username,user=user)
 
 
 @app.route('/login', methods=['POST','GET'])
 def Login():
     lform = LoginForm()
-    email = None
-    password = None
     # validation
     if lform.validate_on_submit():
-        email = lform.email.data
-        password = lform.password.data
-        lform.email , lform.password = None, None
-        flash("Login Succesful")
-    # email = request.form.get('email')
-    # password = request.form.get('password')
-    print(email, password)
-    # if request.args.get('email'):
+        user = Users.query.filter_by(email=lform.email.data).first()
+        if user:
+            if check_password_hash(user.password_hash, lform.password.data):
+                login_user(user)
+                flash("Login Succesfull!!")
+                return redirect(url_for('index'))
+            else:
+                flash("Wrong Password - Try Again!")
+        else:
+            flash("User does'nt exist - Try Again!")
 
-    return render_template('login.html',email=email,password=password,form=lform)
+    return render_template('login.html',form=lform)
 
+# Logout page
+@app.route('/logout', methods=['POST','GET'])
+@login_required
+def logout():
+    logout_user()
+    flash("You have been Logged out!")
+    return redirect(url_for('index'))
 
-@app.route('/register', methods=['POST','GET'])
-def Register():
-    rform = RegistrationForm()
-    username = None
-    email = None
-    password = None
-    confirm_password = None
-    # validation
-    if rform.validate_on_submit():
-        username = rform.username.data
-        email = rform.email.data
-        password = rform.password.data
-        confirm_password = rform.confirm_password.data
-        rform.email ,rform.username , rform.password , rform.confirm_password = None, None, None,None
-        flash("Login Succesful")
-    print(username, email)
-
-    return render_template('register.html',username=username, email=email,password=password,confirm_password=confirm_password,form=rform)
+# @app.route('/register', methods=['POST','GET'])
+# def Register():
+#     rform = RegistrationForm()
+#     # validation
+#     if rform.validate_on_submit():
+#         username = rform.username.data
+#         email = rform.email.data
+#         password = rform.password.data
+#         confirm_password = rform.confirm_password.data
+#         flash("Login Succesful")
+#     print(username, email)
+#     return render_template('register.html',form=rform)
 
 if __name__ == '__main__':
     app.debug = True

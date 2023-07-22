@@ -31,8 +31,13 @@
                     <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button"
                         aria-haspopup="true" aria-expanded="false">Profile</a>
                     <div class="dropdown-menu">
-                        <a class="dropdown-item" href="#">Login</a>
-                        <a class="dropdown-item" href="#">Register</a>
+                        {% if user %}
+                        <a class="dropdown-item" href="{{ url_for('logout')}}">Logout</a>
+                        <a class="dropdown-item" href="{{ url_for('logout')}}">Profile</a>
+                        {% else %}
+                        <a class="dropdown-item" href="{{ url_for('Login')}}">Login</a>
+                        <a class="dropdown-item" href="{{ url_for('add_user') }}">Register</a>
+                        {% endif %}
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="#">Admin</a>
                     </div>
