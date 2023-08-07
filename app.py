@@ -16,6 +16,55 @@ app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///data.db'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+name, description, price, category_id, image = None, None, None, None, None
+
+products = None
+
+# Dummy data for Product model
+products = [
+    {
+        'name': 'Apple',
+        'description': 'Fresh red apple',
+        'price': 1.99,
+        'category_id': 1,
+        'image': 'images/apple.jpg',
+    },
+    {
+        'name': 'Banana',
+        'description': 'Yellow banana',
+        'price': 0.99,
+        'category_id': 1,
+        'image': 'images/banana.jpg',
+    },
+    {
+        'name': 'Orange',
+        'description': 'Juicy orange',
+        'price': 1.49,
+        'category_id': 1,
+        'image': 'images/orange.jpg',
+    },
+    {
+        'name': 'Milk',
+        'description': 'Fresh milk',
+        'price': 2.49,
+        'category_id': 2,
+        'image': 'images/milk.jpg',
+    },
+    {
+        'name': 'Bread',
+        'description': 'Whole wheat bread',
+        'price': 3.99,
+        'category_id': 2,
+        'image': 'images/bread.jpg',
+    },
+    # Add more dummy products as needed
+]
+
+
+
+
+# products = {  id: 1, name : "Banana", description: "Banana it is ", price: 30, category_id:  1, image: "static/img/Banana_Iconic.jpg"}
+
 # DB Model for Users name
 class Users(db.Model, UserMixin):
     id  = db.Column(db.Integer, primary_key=True)
@@ -38,15 +87,28 @@ class Users(db.Model, UserMixin):
     def __repr__(self):
         return '<Name %r>' % self.name
 
+# Products table 
 class Products(db.Model):
-    productId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    price = db.Column(db.Integer, nullable=False)
-    description = db.Column(db.String(200))
-    imgage = db.Column(db.String, nullable=False)
-    stock = db.Column(db.Integer)
-    categoryId = db.Column(db.Integer, foreign_keys=True, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    price = db.Column(db.Float, nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
+    image = db.Column(db.String(255), nullable=True)
 
+    def __repr__(self):
+        return f'<Products {self.name}>'
+
+# Categories model
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    products = db.relationship('Products', backref='category', lazy=True)
+
+    def __repr__(self):
+        return f'<Category {self.name}>'
+    
 
 # Flask Login
 login_manager = LoginManager()
@@ -62,9 +124,18 @@ def load_user(user_id):
 @login_required
 def index():
     user = None
+    products = Products.query.all()
     if current_user.is_authenticated:
         user = current_user
-    return render_template('base.html',user=user)
+    return render_template('base.html',user=user, products=products)
+    
+# @app.route('/pro', methods=['GET','POST'])
+# @login_required
+# def index():
+#     user = None
+#     if current_user.is_authenticated:
+#         user = current_user
+#     return render_template('base.html',user=user)
 
 
 @app.route('/Users_pwd', methods=['GET','POST'])
