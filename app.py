@@ -1,10 +1,13 @@
-from flask import Flask, render_template, request, flash, redirect,url_for
+from flask import Flask, abort, render_template, request, flash, redirect,url_for
 from forms import LoginForm, RegistrationForm,PasswordForm
 from flask_login import UserMixin, login_user, login_required, logout_user, current_user, LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_admin.contrib.sqla import ModelView
+from flask_admin import Admin
+
 
 app = Flask(__name__    )
 
@@ -16,12 +19,17 @@ app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///data.db'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+admin = Admin(app, name="The pantry Control Panel")
+# Dummy data for Product model
+# products = {  id: 1, name : "Banana", description: "Banana it is ", price: 30, category_id:  1, image: "static/img/Banana_Iconic.jpg"}
+
 # DB Model for Users name
 class Users(db.Model, UserMixin):
     id  = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(200),nullable=False)
     email = db.Column(db.String(100), nullable=False, unique=True)
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
+    is_admin = db.Column(db.Boolean, default=False)
     # password
     password_hash = db.Column(db.String(128))
     @property
@@ -38,33 +46,79 @@ class Users(db.Model, UserMixin):
     def __repr__(self):
         return '<Name %r>' % self.name
 
+# Products table 
 class Products(db.Model):
-    productId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    price = db.Column(db.Integer, nullable=False)
-    description = db.Column(db.String(200))
-    imgage = db.Column(db.String, nullable=False)
-    stock = db.Column(db.Integer)
-    categoryId = db.Column(db.Integer, foreign_keys=True, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    price = db.Column(db.Float, nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
+    image = db.Column(db.String(255), nullable=True)
 
+    def __repr__(self):
+        return f'<Products {self.name}>'
 
+# Categories model
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    products = db.relationship('Products', backref='category', lazy=True)
+
+    def __repr__(self):
+        return f'<Category {self.name}>'
+    
 # Flask Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'Login'
 
+# @login_manager.user_loader
+# def load_user(user_id):
+#     return Users.query.get(int(user_id))
+
+
+# from admin import admin_bp
+# app.register_blueprint(admin_bp)
+class Controller(ModelView):
+    def is_accessible(self):
+        if current_user.is_admin == True:
+            return current_user.is_authenticated
+        else:
+            # current_user = None
+            return abort(404)
+        
+    def not_auth(self):
+        return "You do not have admin access!!"
+
+@app.route('/admin-login', methods=['GET','POST'])
+def create_admin():
+    return render_template('admin_login.html')
+
+admin.add_view(Controller(Users, db.session))
+admin.add_view(Controller(Products, db.session))
+admin.add_view(Controller(Category, db.session))
+
 @login_manager.user_loader
 def load_user(user_id):
     return Users.query.get(int(user_id))
-
 
 @app.route('/', methods=['GET','POST'])
 @login_required
 def index():
     user = None
+    products = Products.query.all()
     if current_user.is_authenticated:
         user = current_user
-    return render_template('base.html',user=user)
+    return render_template('base.html',user=user, products=products)
+    
+# @app.route('/pro', methods=['GET','POST'])
+# @login_required
+# def index():
+#     user = None
+#     if current_user.is_authenticated:
+#         user = current_user
+#     return render_template('base.html',user=user)
 
 
 @app.route('/Users_pwd', methods=['GET','POST'])
