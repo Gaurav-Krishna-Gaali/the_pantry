@@ -33,6 +33,13 @@
                         <h5 class="card-title">{{ product.name }}</h5>
                         <p class="card-text">{{ product.description }}</p>
                         <p class="card-text">Price: ${{ product.price }}</p>
+                        <p class="card-text">In Stock:{{ product.quantity }}</p>
+                        <form action="/add" method="post">
+                            <input type="hidden" name="code" value={{product.id}} />
+                            <input type="text" name="quantity" value='1' size="2" />
+                            <button type="submit" class="btn btn-outline-secondary">Add to cart</button>
+                            <!-- {{form.submit(class="btn btn-outline-secondary")}} -->
+                        </form>
                     </div>
                 </div>
                 <!-- dummy -->

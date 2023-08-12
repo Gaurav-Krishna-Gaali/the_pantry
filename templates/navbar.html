@@ -42,13 +42,53 @@
                         <a class="dropdown-item" href="/admin">Admin</a>
                     </div>
 
-                <li><button type="button" class="btn btn-outline-success" ">Cart</button></li>
+                <li><button type="button" class="btn btn-outline-success" data-bs-toggle="modal"
+                        data-bs-target="#myModal">Cart</button></li>
 
                 </li>
 
+                <!-- Modal View -->
+                <div class="modal" id="myModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    Your Cart items
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true"></span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <ul class="list-unstyled">
+                                    <!--  -->
+                                    {% for product in cart_products %}
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <img src="{{ product.product_image }}" class="card-img-top"
+                                                alt="Product Image">
+                                            <div class="card-body">
+                                                <h5 class="card-title">{{ product.product_name }}</h5>
+                                                <p class="card-text">{{ product.product_desc }}</p>
+                                                <p class="card-text">Price: ${{ product.product_price }}</p>
+                                                <p class="card-text">Quantity: {{ product.quantity }}</p>
+                                                <p class="card-text">Subtotal: {{ product.subtotal }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+
+                                </ul>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
             </ul>
-            
+
         </div>
     </div>
 </nav>
