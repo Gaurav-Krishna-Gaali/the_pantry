@@ -19,5 +19,9 @@ class LoginForm(FlaskForm):
     email = EmailField('Email',validators=[DataRequired()])
     password = StringField('Password',widget= PasswordInput() ,validators=[DataRequired()])
     submit = SubmitField('Submit')
+class AdminForm(FlaskForm):
+    email = EmailField('Email',validators=[DataRequired()])
+    password = StringField('Password',widget= PasswordInput() ,validators=[DataRequired()])
+    submit = SubmitField('Submit')
 
 

@@ -1,12 +1,12 @@
 from flask import Flask, abort, render_template, request, flash, redirect,url_for
-from forms import LoginForm, RegistrationForm,PasswordForm
+from forms import AdminForm, LoginForm, RegistrationForm,PasswordForm
 from flask_login import UserMixin, login_user, login_required, logout_user, current_user, LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_admin.contrib.sqla import ModelView
-from flask_admin import Admin
+from flask_admin import Admin, AdminIndexView, expose
 
 
 app = Flask(__name__    )
@@ -19,7 +19,7 @@ app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///data.db'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-admin = Admin(app, name="The pantry Control Panel")
+# admin = Admin(app, name="The pantry Control Panel")
 # Dummy data for Product model
 # products = {  id: 1, name : "Banana", description: "Banana it is ", price: 30, category_id:  1, image: "static/img/Banana_Iconic.jpg"}
 
@@ -73,9 +73,14 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'Login'
 
-# @login_manager.user_loader
-# def load_user(user_id):
-#     return Users.query.get(int(user_id))
+@login_manager.user_loader
+def load_user(user_id):
+    return Users.query.get(int(user_id))
+
+
+@app.before_request
+def before_req():
+    user = current_user
 
 
 # from admin import admin_bp
@@ -85,19 +90,57 @@ class Controller(ModelView):
         if current_user.is_admin == True:
             return current_user.is_authenticated
         else:
-            # current_user = None
-            return abort(404)
+            if current_user.is_admin == True:
+                return redirect(url_for('create_admin'))
         
     def not_auth(self):
         return "You do not have admin access!!"
+    
+class MyAdminIndexView(AdminIndexView):
+    @expose('/')
+    def index(self):
+        if current_user.is_admin == True:
+            return super(MyAdminIndexView,self).index()
+        next_url = request.endpoint
+        login_url = "%s?next=%s" % (url_for('admin_login'), next_url)
+        return redirect(login_url)
 
-@app.route('/admin-login', methods=['GET','POST'])
-def create_admin():
-    return render_template('admin_login.html')
 
+admin = Admin(app, name="The Pantry Control Panel", index_view=MyAdminIndexView())
 admin.add_view(Controller(Users, db.session))
 admin.add_view(Controller(Products, db.session))
 admin.add_view(Controller(Category, db.session))
+
+# @app.route('/admin', methods=['GET','POST'])
+# @login_required
+# def admin():
+#     # if current_user.is_admin == True:
+#         return "Hi"
+
+@app.route('/admin-login', methods=['GET','POST'])
+def admin_login():
+    logout_user()
+    aform = AdminForm()
+    flash("You do not have Admin acces. Please login in if you have admin credentials.")
+    # Admin Validation
+    if aform.validate_on_submit():
+        user = Users.query.filter_by(email=aform.email.data).first()
+        if user :
+            if check_password_hash(user.password_hash, aform.password.data):
+                if user.is_admin == True:
+                    login_user(user)
+                # flash("Login Succesfull!!")
+                return redirect(url_for('index'))
+            else:
+                flash("You do not have admin acess!! ")
+        else:
+            flash("Wrong Credentials - Try Again!")
+    return render_template('admin_login.html', form =aform)
+
+
+# admin.add_view(ModelView(Users, db.session))
+# admin.add_view(ModelView(Products, db.session))
+# admin.add_view(ModelView(Category, db.session))
 
 @login_manager.user_loader
 def load_user(user_id):
