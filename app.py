@@ -1,5 +1,5 @@
 from flask import Flask, abort, render_template, request, flash, redirect,url_for
-from forms import AdminForm, LoginForm, RegistrationForm,PasswordForm
+from forms import Addtocart, AdminForm, LoginForm, RegistrationForm,PasswordForm
 from flask_login import UserMixin, login_user, login_required, logout_user, current_user, LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -52,6 +52,7 @@ class Products(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Float, nullable=False)
+    quantity = db.Column(db.Integer)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     image = db.Column(db.String(255), nullable=True)
 
@@ -68,6 +69,17 @@ class Category(db.Model):
     def __repr__(self):
         return f'<Category {self.name}>'
     
+# Model for cart
+class CartItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+
+    product = db.relationship('Products', backref='cart_items')
+    user = db.relationship('Users', backref='cart_items')
+
+    
 # Flask Login
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -78,14 +90,14 @@ def load_user(user_id):
     return Users.query.get(int(user_id))
 
 
-@app.before_request
-def before_req():
-    user = current_user
+# @app.before_request
+# def before_req():
+#     user = current_user
 
-
-# from admin import admin_bp
-# app.register_blueprint(admin_bp)
 class Controller(ModelView):
+    column_display_pk = True
+    column_hide_backrefs = False
+    # column_list = ('id')
     def is_accessible(self):
         if current_user.is_admin == True:
             return current_user.is_authenticated
@@ -96,6 +108,9 @@ class Controller(ModelView):
     def not_auth(self):
         return "You do not have admin access!!"
     
+
+class CartItemController(Controller):
+    column_list =  ('id', 'user_id', 'product_id', 'quantity')
 class MyAdminIndexView(AdminIndexView):
     @expose('/')
     def index(self):
@@ -110,6 +125,7 @@ admin = Admin(app, name="The Pantry Control Panel", index_view=MyAdminIndexView(
 admin.add_view(Controller(Users, db.session))
 admin.add_view(Controller(Products, db.session))
 admin.add_view(Controller(Category, db.session))
+admin.add_view(CartItemController(CartItem, db.session))
 
 # @app.route('/admin', methods=['GET','POST'])
 # @login_required
@@ -138,31 +154,94 @@ def admin_login():
     return render_template('admin_login.html', form =aform)
 
 
-# admin.add_view(ModelView(Users, db.session))
-# admin.add_view(ModelView(Products, db.session))
-# admin.add_view(ModelView(Category, db.session))
-
 @login_manager.user_loader
 def load_user(user_id):
     return Users.query.get(int(user_id))
 
+# cart management function
+def cart_items_costs():
+    user_id = current_user.id
+    cart_items_with_products = db.session.query(CartItem, Products)\
+    .join(Products, CartItem.product_id == Products.id)\
+    .filter(CartItem.user_id == user_id)\
+    .all()
+    products_in_cart = []
+    for cart_item, product in cart_items_with_products:
+        # pprint(vars(product))
+        # pprint(vars(cart_item))
+        cart_item_data = {
+            'product_id': product.id,
+            'product_name': product.name,
+            'product_desc': product.description,
+            'product_price': product.price,
+            'quantity': cart_item.quantity,
+            'product_category_id': product.category_id,
+            'product_image':product.image,
+            'subtotal': product.price * cart_item.quantity
+        }
+        # cart_product['quantity'] = quantity
+        products_in_cart.append(cart_item_data)
+    print(products_in_cart)
+    return products_in_cart
+    
+
+
 @app.route('/', methods=['GET','POST'])
 @login_required
 def index():
+    addtocart = Addtocart()
     user = None
     products = Products.query.all()
+
+    products_in_cart = cart_items_costs()
+
+    # for cart_item, product in cart_items_with_products:
+    #  print(f"Product: {product.name}, Quantity: {cart_item.quantity}")
+
     if current_user.is_authenticated:
         user = current_user
-    return render_template('base.html',user=user, products=products)
+
+    remove_items = None
+    return render_template('base.html',user=user, cart_products=products_in_cart, form = addtocart, products=products, remove_items=remove_items )
+
+@app.route('/add', methods=['POST'])
+@login_required
+def add_product_to_cart():
+    try:
+        _quantity = int(request.form['quantity'])
+        _code = request.form['code']
+        # vaidation
+        if _quantity and _code and  request.method == 'POST':
+            product = Products.query.get_or_404(_code)
+            # quantity = int(request.form.get('quantity'))
+            item_in_cart = CartItem.query.filter_by(user_id=current_user.id, product_id=_code).first()
+
+            if item_in_cart:
+                item_in_cart.quantity += _quantity
+            else:
+                new_cart_item = CartItem(user_id=current_user.id, product_id=_code, quantity=_quantity)
+                db.session.add(new_cart_item)
+
+            db.session.commit()
+            flash('Item added to cart successfully!', 'success')
+            return redirect(url_for('index'))
+        else:
+            return "Error while adding item to cart"
     
-# @app.route('/pro', methods=['GET','POST'])
-# @login_required
-# def index():
+    except Exception as e:
+        print (e)
+    finally:
+        pass
+        # cursor.close()
+        # conn.close()
+    
+@app.route('/cart', methods=['GET','POST'])
+@login_required
+def cart():
 #     user = None
 #     if current_user.is_authenticated:
 #         user = current_user
-#     return render_template('base.html',user=user)
-
+    return render_template('Cart.html')
 
 @app.route('/Users_pwd', methods=['GET','POST'])
 def Users_pwd():
