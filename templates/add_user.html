@@ -1,5 +1,14 @@
-{%extends 'base.html'%}
+{% extends "base.html" %}
 {% block content %}
+
+<head
+    href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+    rel="stylesheet">
+
+    <!-- Custom styles for this template-->
+    <link href="../static/css/css/sb-admin-2.min.css" rel="stylesheet">
+
+</head>
 
 {% for message in get_flashed_messages() %}
 <div class="alert alert-warning alert-dismissible fade show" role="alert">
@@ -10,44 +19,90 @@
 </div>
 {% endfor %}
 
-<div class="container mt-5">
+
+<div class="container">
     {% if username %}
     <h1>Hello {{username}}!!</h1>
     {% else %}
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">Register</h5>
-            <form method="post">
-                {{form.hidden_tag()}}
-                {{form.username.label(class="form-label")}}
-                {{form.username(class="form-control")}}
-                {{form.email.label(class="form-label")}}
-                {{form.email(class="form-control")}}
-                <br />
-                <!-- password field -->
-                {{form.password_hash.label(class="form-label")}}
-                {{form.password_hash(class="form-control")}}
-                {{form.password_hash2.label(class="form-label")}}
-                {{form.password_hash2(class="form-control")}}
-                <br />
-                {{form.submit(class="btn btn-primary")}}
+    <div class="card o-hidden border-0 shadow-lg my-5">
+        <div class="card-body p-0">
+            <!-- Nested Row within Card Body -->
+            <div class="row">
+                <div class="col-lg-5 d-none d-lg-block bg-register-image"></div>
+                <div class="col-lg-7">
+                    <div class="p-5">
+                        <div class="text-center">
+                            <h1 class="h4 text-gray-900 mb-4">Create an Account!</h1>
+                        </div>
+                        <form class="user" method="post">
+                            {{form.hidden_tag()}}
+                            <div class="form-group row">
+                                <div class="col-sm-12 mb-3 mb-sm-0">
+                                    {{ form.username(class="form-control form-control-user",
+                                    placeholder="Enter your username")
+                                    }}
 
-                <!-- <div class="form-group">
-                    <label for="inputField">Input Field</label>
-                    <input type="text" class="form-control" id="inputField" placeholder="Enter something...">
+                                </div>
+
+                            </div>
+                            <div class="form-group">
+                                {{ form.email(class="form-control
+                                form-control-user",id="exampleInputEmail",placeholder="Email Address") }}
+
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-sm-6 mb-3 mb-sm-0">
+
+                                    {{ form.password_hash.label }} {{ form.password_hash(class="form-control
+                                    form-control-user"
+                                    ,id="exampleInputPassword" ,placeholder="Password") }}
+                                </div>
+                                <div class="col-sm-6">
+
+                                    {{ form.password_hash2.label }} {{ form.password_hash2(class="form-control
+                                    form-control-user",
+                                    id="exampleRepeatPassword", placeholder="Repeat Password") }}
+
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-user btn-block">Register</button>
+                            <hr>
+                            <!-- <a href="index.html" class="btn btn-google btn-user btn-block">
+                                <i class="fab fa-google fa-fw"></i> Register with Google
+                            </a>
+                            <a href="index.html" class="btn btn-facebook btn-user btn-block">
+                                <i class="fab fa-facebook-f fa-fw"></i> Register with Facebook
+                            </a> -->
+                        </form>
+                        <hr>
+                        <div class="text-center">
+                            <a class="small" href="forgot-password.html">Forgot Password?</a>
+                        </div>
+                        <div class="text-center">
+                            <a class="small" href="login.html">Already have an account? Login!</a>
+                        </div>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Submit</button> -->
-            </form>
-            <br />
-            <br />
-
+            </div>
             {% for our_user in our_users %}
             {{our_user.id}}.{{our_user.name}} - {{our_user.email}}
             {% endfor %}
-
         </div>
     </div>
     {% endif %}
+
 </div>
 
+<!-- Bootstrap core JavaScript-->
+<!-- <script src="../static/vendor/jquery/jquery.min.js"></script> -->
+<!-- <script src="../static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script> -->
+
+<!-- Core plugin JavaScript-->
+<!-- <script src="../static/vendor/jquery-easing/jquery.easing.min.js"></script> -->
+
+<!-- Custom scripts for all pages-->
+<!-- <script src="../static/js/sb-admin-2.min.js"></script> -->
+
 {% endblock %}
+
+</html>

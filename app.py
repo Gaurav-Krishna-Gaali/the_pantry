@@ -1,5 +1,5 @@
 from flask import Flask, abort, render_template, request, flash, redirect,url_for
-from forms import Addtocart, AdminForm, LoginForm, RegistrationForm,PasswordForm
+from forms import Addtocart, AdminForm, ExForm, LoginForm, RegistrationForm,PasswordForm
 from flask_login import UserMixin, login_user, login_required, logout_user, current_user, LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -7,6 +7,7 @@ from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_admin.contrib.sqla import ModelView
 from flask_admin import Admin, AdminIndexView, expose
+from flask_wtf.file import FileField
 
 
 app = Flask(__name__    )
@@ -30,6 +31,7 @@ class Users(db.Model, UserMixin):
     email = db.Column(db.String(100), nullable=False, unique=True)
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
     is_admin = db.Column(db.Boolean, default=False)
+    profile_pic = FileField("Profile Pic")
     # password
     password_hash = db.Column(db.String(128))
     @property
@@ -184,7 +186,29 @@ def cart_items_costs():
     print(products_in_cart)
     return products_in_cart
     
+# example
+@app.route('/ex', methods=['GET','POST'])
+def ex():
+    username = None
+    user = None
+    exform = RegistrationForm()
+    if exform.validate_on_submit():
+        user = Users.query.filter_by(email=exform.email.data).first()
+        if user is  None:
+            # hashing password
+            hashed_pw = generate_password_hash(exform.password_hash.data, "sha256")
+            user = Users(username=exform.username.data, email=exform.email.data, password_hash=hashed_pw)
+            db.session.add(user)
+            db.session.commit()
+        username = exform.username.data
+        exform.username.data  =''
+        exform.email.data = ''
+        exform.password_hash.data =''
 
+        flash("User added Succesful")
+    exform = ExForm()
+    display_prod = False
+    return render_template('ex.html', display_prod=display_prod, form = exform,username=username,user=user)
 
 @app.route('/', methods=['GET','POST'])
 @login_required
@@ -201,12 +225,15 @@ def index():
     if current_user.is_authenticated:
         user = current_user
 
+    cart_modal = False
     remove_items = None
-    return render_template('base.html',user=user, cart_products=products_in_cart, form = addtocart, products=products, remove_items=remove_items )
+    display_prod = True
+    return render_template('base.html', cart_modal = cart_modal,user=user,display_prod=display_prod, cart_products=products_in_cart, form = addtocart, products=products, remove_items=remove_items )
 
 @app.route('/add', methods=['POST'])
 @login_required
 def add_product_to_cart():
+    cart_modal = True
     try:
         _quantity = int(request.form['quantity'])
         _code = request.form['code']
