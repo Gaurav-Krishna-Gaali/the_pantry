@@ -30,27 +30,27 @@
                 <div class="card mb-3">
                     <img src="{{ product.image }}" class="card-img-top" alt="Product Image">
                     <div class="card-body">
-                        <h5 class="card-title">{{ product.name }}</h5>
-                        <p class="card-text">{{ product.description }}</p>
-                        <p class="card-text">Price: ${{ product.price }}</p>
-                        <p class="card-text">In Stock:{{ product.quantity }}</p>
+                        <h5 class="card-title text-center">{{ product.name }}</h5>
+                        <p class="text-muted mb-4 text-center">{{ product.description }}</p>
+                        <div class="d-flex justify-content-between">
+                            <span>In Stock:</span><span>{{ product.quantity }}</span>
+                        </div>
                         <form action="/add" method="post">
                             <input type="hidden" name="code" value={{product.id}} />
-                            <input type="text" name="quantity" value='1' size="2" />
-                            <button type="type" class="btn btn-outline-secondary">Add to cart</button>
+                            <div class="d-flex justify-content-between">
+                                <span>Quantity</span><span><input type="text" name="quantity" value='1'
+                                        size="2" /></span>
+                            </div>
                             <!-- {{form.submit(class="btn btn-outline-secondary")}} -->
+                            <div class="d-flex justify-content-between total font-weight-bold mt-4">
+                                <span>Price:</span><span> ${{ product.price }}</span>
+                            </div>
+                            <button type="type" class="btn btn-outline-secondary justify-content-center">Add to
+                                cart</button>
                         </form>
+
                     </div>
                 </div>
-                <!-- dummy -->
-                <!-- <div class="card mb-3">
-                    <img src="static/img/Banana.jpg"" class=" card-img-top" alt="Product Image">
-                    <div class="card-body">
-                        <h5 class="card-title">Banana</h5>
-                        <p class="card-text">Banana antar ra babu</p>
-                        <p class="card-text">Price: 20</p>
-                    </div>
-                </div> -->
             </div>
             {% endfor %}
         </div>

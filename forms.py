@@ -46,3 +46,7 @@ class AdminForm(FlaskForm):
 
 class Addtocart(FlaskForm):
     submit = SubmitField('Add to cart')
+
+
+class Cart_crud(FlaskForm):
+    submit = SubmitField('Place Order')

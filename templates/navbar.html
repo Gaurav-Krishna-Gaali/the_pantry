@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg    {{ 'sticky-top' if cart_modal == True }} data-bs-theme=" light"
+<nav class="navbar navbar-expand-lg  sticky-top  bg-white data-bs-theme=" light"
     style="border-bottom: 1px solid grey ; padding: 10px; padding-bottom: 20px;">
     <div class="container-fluid">
         <a class="navbar-brand" href="/">
@@ -36,49 +36,74 @@
                         data-bs-target="#myModal">Cart</button></li>
 
                 </li>
-
-                <!-- Modal View -->
-                <div class="modal" id="myModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true">
-                    <div class="modal-dialog" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">
-                                    Your Cart items
-                                </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true"></span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <ul class="list-unstyled">
-                                    <!--  -->
-                                    {% for product in cart_products %}
-                                    <div class="col-md-6">
-                                        <div class="card mb-3">
-                                            <img src="{{ product.product_image }}" class="card-img-top"
-                                                alt="Product Image">
-                                            <div class="card-body">
-                                                <h5 class="card-title">{{ product.product_name }}</h5>
-                                                <p class="card-text">{{ product.product_desc }}</p>
-                                                <p class="card-text">Price: ${{ product.product_price }}</p>
-                                                <p class="card-text">Quantity: {{ product.quantity }}</p>
-                                                <p class="card-text">Subtotal: {{ product.subtotal }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-
-                                </ul>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
             </ul>
-
         </div>
     </div>
+
 </nav>
+
+<!-- Modal View -->
+<div class="modal Zip" id="myModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Your Cart items
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">Product</th>
+                            <th scope="col">Title</th>
+                            <th scope="col">Quantity</th>
+                            <th scope="col"></th>
+                            <th scope="col">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in cart_products %}
+                        <tr class="table-light">
+                            <th scope="row"><img src="{{ product.product_image }}" class="card-img-top"
+                                    alt="Product Image"></th>
+                            <td>
+                                <h5 class="card-title">{{ product.product_name }}</h5>
+                            </td>
+                            <td>
+                                <input class="" value="{{ product.quantity }}" style="width: 50%"></input>
+                                <!-- {{ product.quantity }} -->
+                            </td>
+                            <td>
+                                <form method="POST"
+                                    action="{{ url_for('remove_from_cart', item_id= product.product_id) }}">
+                                    <button type="submit" class="btn-close bg-red"></button>
+                                </form>
+                            </td>
+                            <td>
+                                <p class="card-text">₹{{ product.subtotal }}</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="">
+                            <th scope="row"></th>
+                            <td></td>
+                            <td>Grand Total</td>
+                            <td>
+                                <bold> </bold>
+                            </td>
+                            <td>₹{{products_total}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" type="submit" name="place_order">Place Order</button>
+            </div>
+        </div>
+    </div>
+</div>
