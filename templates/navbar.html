@@ -22,6 +22,7 @@
                         aria-haspopup="true" aria-expanded="false">Profile</a>
                     <div class="dropdown-menu">
                         {% if user %}
+                        <a class="dropdown-item" href="">My Wallet : {{ user.wallet }} </a>
                         <a class="dropdown-item" href="{{ url_for('logout')}}">Logout</a>
                         <a class="dropdown-item" href="{{ url_for('logout')}}">Profile</a>
                         {% else %}

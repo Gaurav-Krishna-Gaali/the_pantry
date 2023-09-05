@@ -10,10 +10,12 @@ from flask_admin.contrib.sqla import ModelView
 from flask_admin import Admin, AdminIndexView, expose
 from flask_wtf.file import FileField
 from flask import jsonify
-import os
+from markupsafe import Markup
+from flask_admin.contrib import sqla, rediscli
 import os.path as op
 from sqlalchemy.event import listens_for
 from flask_admin import Admin, form
+from wtforms import fields, widgets
 
 app = Flask(__name__)
 
@@ -25,13 +27,13 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-
 class Users(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(200), nullable=False)
     email = db.Column(db.String(100), nullable=False, unique=True)
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
     is_admin = db.Column(db.Boolean, default=False)
+    wallet = db.Column(db.Integer, default= 1000)
     profile_pic = FileField("Profile Pic")
     # password
     password_hash = db.Column(db.String(128))
@@ -51,8 +53,6 @@ class Users(db.Model, UserMixin):
         return '<Name %r>' % self.name
 
 # Products table
-
-
 class Products(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -62,6 +62,7 @@ class Products(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey(
         'category.id'), nullable=False)
     image = db.Column(db.String(255), nullable=True)
+    path = db.Column(db.Unicode(128))
 
     def __repr__(self):
         return f'<Products {self.name}>'
@@ -79,21 +80,16 @@ class Category(db.Model):
         return f'<Category {self.name}>'
 
 # Model for cart
-
-
 class CartItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey(
         'products.id'), nullable=False)
     quantity = db.Column(db.Integer, nullable=False, default=1)
-
     product = db.relationship('Products', backref='cart_items')
     user = db.relationship('Users', backref='cart_items')
 
 # orders table
-
-
 class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -270,7 +266,6 @@ def index():
     order = Cart_crud()
     user = None
     products = Products.query.all()
-
     products_in_cart = cart_items_costs()
     products_total = cart_items_total(products_in_cart)
 
@@ -279,9 +274,11 @@ def index():
 
     if current_user.is_authenticated:
         user = current_user
+    # wallet = Users.query.get(current_user.wallet)
+    print(user.id)
     remove_items = None
     display_prod = True
-    return render_template('base.html', user=user, order=order,  display_prod=display_prod, products_total=products_total, cart_products=products_in_cart, form=addtocart, products=products, remove_items=remove_items)
+    return render_template('base.html', user=user, order=order,   display_prod=display_prod, products_total=products_total, cart_products=products_in_cart, form=addtocart, products=products, remove_items=remove_items)
 
 
 @app.route('/add', methods=['POST'])
