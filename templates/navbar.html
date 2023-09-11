@@ -75,7 +75,7 @@
                                 <h5 class="card-title">{{ product.product_name }}</h5>
                             </td>
                             <td>
-                                <input class="" value="{{ product.quantity }}" style="width: 50%"></input>
+                                <p class="" value="{{ product.quantity }}" style="width: 50%">{{ product.quantity }}</p>
                                 <!-- {{ product.quantity }} -->
                             </td>
                             <td>
@@ -103,7 +103,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success" type="submit" name="place_order">Place Order</button>
+                <a class="btn btn-success" href="{{ url_for('Checkout') }}">Place Order</a>
             </div>
         </div>
     </div>

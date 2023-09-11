@@ -12,10 +12,14 @@ from flask_wtf.file import FileField
 from flask import jsonify
 from markupsafe import Markup
 from flask_admin.contrib import sqla, rediscli
-import os.path as op
+from flask_admin.contrib.fileadmin import FileAdmin
+import os
+# import os.path as op
 from sqlalchemy.event import listens_for
 from flask_admin import Admin, form
 from wtforms import fields, widgets
+from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
@@ -25,7 +29,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 
 # init db
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+migrate = Migrate(app, db, render_as_batch=True)
 
 class Users(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -62,14 +66,15 @@ class Products(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey(
         'category.id'), nullable=False)
     image = db.Column(db.String(255), nullable=True)
-    path = db.Column(db.Unicode(128))
+    # path = db.Column(db.BLOB, nullable=True)
 
     def __repr__(self):
         return f'<Products {self.name}>'
 
+    def __str__(self):
+        return self.name
+
 # Categories model
-
-
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -78,6 +83,13 @@ class Category(db.Model):
 
     def __repr__(self):
         return f'<Category {self.name}>'
+
+    def __str__(self):
+        return self.text
+
+class Demo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    f = db.Column(db.BLOB, nullable=False)
 
 # Model for cart
 class CartItem(db.Model):
@@ -89,19 +101,35 @@ class CartItem(db.Model):
     product = db.relationship('Products', backref='cart_items')
     user = db.relationship('Users', backref='cart_items')
 
-# orders table
-class Order(db.Model):
+# Model for Orders
+class Orders(db.Model):
+    __tablename__ = 'orders'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    product_id = db.Column(db.Integer, db.ForeignKey(
-        'products.id'), nullable=False)
-    quantity = db.Column(db.Integer, nullable=False)
-    total_amount = db.Column(db.Float, nullable=False)
     order_date = db.Column(db.DateTime, default=datetime.utcnow)
+    total_amount = db.Column(db.Float, nullable=False)
+    status = db.Column(db.Boolean, default=False)
+    delivery_address = db.Column(db.Text, nullable=False)
 
-    product = db.relationship('Products', backref='orders')
     user = db.relationship('Users', backref='orders')
 
+    def __repr__(self):
+        return f'<Orders {self.id}>'
+
+# Model for Order Items
+class OrderItem(db.Model):
+    __tablename__ = 'order_items'
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+
+    # Define relationships
+    order = db.relationship('Orders', backref=db.backref('order_items', lazy='dynamic'))
+    product = db.relationship('Products')
+
+    def __repr__(self):
+        return f'<OrderItem {self.id}>'
 
 # Flask Login
 login_manager = LoginManager()
@@ -116,7 +144,7 @@ def load_user(user_id):
 
 class Controller(ModelView):
     column_display_pk = True
-    column_hide_backrefs = False
+    # column_hide_backrefs = False
     # column_list = ('id')
 
     def is_accessible(self):
@@ -132,7 +160,15 @@ class Controller(ModelView):
 
 class CartItemController(Controller):
     column_list = ('id', 'user_id', 'product_id', 'quantity')
-
+class ProductController(Controller):
+    column_list = ('id', 'name', 'description', 'price', 'quantity', 'category_id', 'image')
+class ProductModelView(ModelView):
+    column_list = ('id', 'name', 'description', 'price', 'quantity', 'category_id', 'image')
+    form_args = {
+        'category': {
+            'query_factory': lambda: db.session.query(Category)
+        }
+    }
 
 class MyAdminIndexView(AdminIndexView):
     @expose('/')
@@ -147,9 +183,13 @@ class MyAdminIndexView(AdminIndexView):
 admin = Admin(app, name="The Pantry Control Panel",
               index_view=MyAdminIndexView())
 admin.add_view(Controller(Users, db.session))
-admin.add_view(Controller(Products, db.session))
+admin.add_view(ProductModelView(Products, db.session))
 admin.add_view(Controller(Category, db.session))
 admin.add_view(CartItemController(CartItem, db.session))
+
+path = os.path.join(os.path.dirname(__file__), 'static/img')
+admin.add_view(FileAdmin(path, '/static/img/', name='Static Files'))
+
 
 # @app.route('/admin', methods=['GET','POST'])
 # @login_required
@@ -180,18 +220,17 @@ def admin_login():
 
 
 # cart management function
-
-
 def cart_items_costs():
     user_id = current_user.id
+    print(user_id)
     cart_items_with_products = db.session.query(CartItem, Products)\
         .join(Products, CartItem.product_id == Products.id)\
         .filter(CartItem.user_id == user_id)\
         .all()
     products_in_cart = []
     for cart_item, product in cart_items_with_products:
-        # pprint(vars(product))
-        # pprint(vars(cart_item))
+        pprint(vars(product))
+        pprint(vars(cart_item))
         cart_item_data = {
             'product_id': product.id,
             'product_name': product.name,
@@ -203,9 +242,8 @@ def cart_items_costs():
             'subtotal': product.price * cart_item.quantity
         }
         # cart_product['quantity'] = quantity
-
         products_in_cart.append(cart_item_data)
-    # print(products_in_cart)
+    print(products_in_cart)
     return products_in_cart
 
 
@@ -278,21 +316,52 @@ def index():
     print(user.id)
     remove_items = None
     display_prod = True
-    return render_template('base.html', user=user, order=order,   display_prod=display_prod, products_total=products_total, cart_products=products_in_cart, form=addtocart, products=products, remove_items=remove_items)
+    return render_template('base.html', user=user, order=order,  display_prod=display_prod, products_total=products_total, cart_products=products_in_cart, form=addtocart, products=products, remove_items=remove_items)
 
 
 @app.route('/add', methods=['POST'])
 @login_required
+# def add_product_to_cart():
+    # try:
+    #     _quantity = int(request.form['quantity'])
+    #     _code = request.form['code']
+    #     # vaidation
+    #     if _quantity and _code and request.method == 'POST':
+    #         product = Products.query.get_or_404(_code)
+    #         print(product)
+    #         # quantity = int(request.form.get('quantity'))
+    #         item_in_cart = CartItem.query.filter_by(
+    #             user_id=current_user.id, product_id=_code).first()
+
+    #         if item_in_cart:
+    #             item_in_cart.quantity += _quantity
+    #         else:
+    #             new_cart_item = CartItem(
+    #                 user_id=current_user.id, product_id=_code, quantity=_quantity)
+    #             db.session.add(new_cart_item)
+
+    #         db.session.commit()
+    #         flash('Item added to cart successfully!', 'success')
+    #         return redirect(url_for('index'))
+    #     else:
+    #         return "Error while adding item to cart"
+
+    # except Exception as e:
+    #     print(e)
+    # return redirect(url_for('index'))
 def add_product_to_cart():
     try:
         _quantity = int(request.form['quantity'])
         _code = request.form['code']
-        # vaidation
+        print(f"Quantity: {_quantity}, Code: {_code}")
+
         if _quantity and _code and request.method == 'POST':
             product = Products.query.get_or_404(_code)
-            # quantity = int(request.form.get('quantity'))
+            print(f"Product: {product}")
+
             item_in_cart = CartItem.query.filter_by(
                 user_id=current_user.id, product_id=_code).first()
+            print(f"Item in Cart: {item_in_cart}")
 
             if item_in_cart:
                 item_in_cart.quantity += _quantity
@@ -308,8 +377,8 @@ def add_product_to_cart():
             return "Error while adding item to cart"
 
     except Exception as e:
-        print(e)
-
+        print(f"Exception: {e}")
+        return redirect(url_for('index'))
 
 @app.route('/remove_from_cart/<int:item_id>', methods=['POST'])
 @login_required
@@ -336,24 +405,19 @@ def remove_from_cart(item_id):
     return redirect(url_for('index'))
 
 
-@app.route('/place_order', methods=['POST', 'GET'])
+@app.route('/Checkout', methods=['POST', 'GET'])
 @login_required
-def place_order():
-    if request.method == 'POST':
-        cart_items = CartItem.query.filter_by(id=current_user.id).all()
+def Checkout():
+        items = cart_items_costs()
 
-        if cart_items:
-            total_amount = sum(item.product.price *
-                               item.quantity for item in cart_items)
-
-            for cart_item in cart_items:
-                order = Order(
-                    user_id=current_user.id,
-                    product_id=cart_item.product_id,
-                    quantity=cart_item.quantity,
-                    total_amount=cart_item.product.price * cart_item.quantity
-                )
-                db.session.add(order)
+        for cart_item in cart_items:
+            order = Order(
+                user_id=current_user.id,
+                product_id=cart_item.product_id,
+                quantity=cart_item.quantity,
+                total_amount=cart_item.product.price * cart_item.quantity
+            )
+            db.session.add(order)
 
             db.session.commit()
             # Clear the cart after placing the order
@@ -362,16 +426,7 @@ def place_order():
             flash('Order placed successfully!', 'success')
         else:
             flash('Your cart is empty.', 'info')
-    return redirect(url_for('cart'))
-
-
-@app.route('/cart', methods=['GET', 'POST'])
-@login_required
-def cart():
-    #     user = None
-    #     if current_user.is_authenticated:
-    #         user = current_user
-    return render_template('carousel.html')
+        return redirect(url_for('cart'))
 
 
 @app.route('/Users_pwd', methods=['GET', 'POST'])
@@ -439,8 +494,6 @@ def Login():
     return render_template('login.html', form=lform)
 
 # Logout page
-
-
 @app.route('/logout', methods=['POST', 'GET'])
 @login_required
 def logout():
