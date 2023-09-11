@@ -76,16 +76,17 @@ class Products(db.Model):
 
 # Categories model
 class Category(db.Model):
+    __tablename__ = 'category'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    products = db.relationship('Products', backref='category', lazy=True)
+    products = db.relationship('Products', backref='category', lazy='dynamic')
 
     def __repr__(self):
         return f'<Category {self.name}>'
 
     def __str__(self):
-        return self.text
+        return self.name
 
 class Demo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -144,7 +145,7 @@ def load_user(user_id):
 
 class Controller(ModelView):
     column_display_pk = True
-    # column_hide_backrefs = False
+    column_hide_backrefs = False
     # column_list = ('id')
 
     def is_accessible(self):
@@ -166,7 +167,7 @@ class ProductModelView(ModelView):
     column_list = ('id', 'name', 'description', 'price', 'quantity', 'category_id', 'image')
     form_args = {
         'category': {
-            'query_factory': lambda: db.session.query(Category)
+            'query_factory': lambda: Category.query.all()
         }
     }
 
@@ -186,6 +187,8 @@ admin.add_view(Controller(Users, db.session))
 admin.add_view(ProductModelView(Products, db.session))
 admin.add_view(Controller(Category, db.session))
 admin.add_view(CartItemController(CartItem, db.session))
+admin.add_view(ModelView(OrderItem, db.session))
+admin.add_view(ModelView(Orders, db.session))
 
 path = os.path.join(os.path.dirname(__file__), 'static/img')
 admin.add_view(FileAdmin(path, '/static/img/', name='Static Files'))
@@ -378,7 +381,8 @@ def add_product_to_cart():
 
     except Exception as e:
         print(f"Exception: {e}")
-        return redirect(url_for('index'))
+        # return redirect(url_for('index'))
+        return add_product_to_cart
 
 @app.route('/remove_from_cart/<int:item_id>', methods=['POST'])
 @login_required
@@ -408,25 +412,37 @@ def remove_from_cart(item_id):
 @app.route('/Checkout', methods=['POST', 'GET'])
 @login_required
 def Checkout():
-        items = cart_items_costs()
+ 
+    cart_items = CartItem.query.filter_by(user_id=current_user.id).all()
+    if cart_items:
+        order = Orders(
+            user_id=current_user.id,
+            total_amount=sum(cart_item.product.price * cart_item.quantity for cart_item in cart_items),
+            status=False,  # You can set the status as needed
+            # delivery_address=current_user.address  # You can set the delivery address as needed
+            delivery_address='home'# You can set the delivery address as needed
+        )
+        db.session.add(order)
+        db.session.commit()
 
         for cart_item in cart_items:
-            order = Order(
-                user_id=current_user.id,
+            order_item = OrderItem(
+                order_id=order.id,  # We will assign this later
                 product_id=cart_item.product_id,
-                quantity=cart_item.quantity,
-                total_amount=cart_item.product.price * cart_item.quantity
+                quantity=cart_item.quantity
             )
-            db.session.add(order)
+            db.session.add(order_item)
+            db.session.commit()
 
-            db.session.commit()
-            # Clear the cart after placing the order
-            CartItem.query.filter_by(user_id=current_user.id).delete()
-            db.session.commit()
-            flash('Order placed successfully!', 'success')
-        else:
-            flash('Your cart is empty.', 'info')
-        return redirect(url_for('cart'))
+        # Clear the cart after placing the order
+        CartItem.query.filter_by(user_id=current_user.id).delete()
+        db.session.commit()
+
+        flash('Order placed successfully!', 'success')
+    else:
+        flash('Your cart is empty.', 'info')
+
+    return redirect(url_for('index'))
 
 
 @app.route('/Users_pwd', methods=['GET', 'POST'])
