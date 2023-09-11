@@ -160,16 +160,23 @@ class Controller(ModelView):
 
 
 class CartItemController(Controller):
+    column_display_pk = True
     column_list = ('id', 'user_id', 'product_id', 'quantity')
-class ProductController(Controller):
-    column_list = ('id', 'name', 'description', 'price', 'quantity', 'category_id', 'image')
+    form_columns = ('id', 'user_id', 'product_id', 'quantity')
+
 class ProductModelView(ModelView):
+    column_display_pk = True
     column_list = ('id', 'name', 'description', 'price', 'quantity', 'category_id', 'image')
+    form_columns = ( 'name', 'description', 'price', 'quantity', 'category_id', 'image')
     form_args = {
         'category': {
             'query_factory': lambda: Category.query.all()
         }
     }
+
+class OrderItemsModelController(ModelView):
+    column_list = ('id', 'order_id', 'product_id', 'quantity')
+    form_columns = ('id', 'order_id', 'product_id', 'quantity')
 
 class MyAdminIndexView(AdminIndexView):
     @expose('/')
@@ -180,15 +187,20 @@ class MyAdminIndexView(AdminIndexView):
         login_url = "%s?next=%s" % (url_for('admin_login'), next_url)
         return redirect(login_url)
 
+class OrderItemController(ModelView):
+    column_display_pk = True
+    column_list = ('id','user_id','order_date','total_amount','status','delivery_address')
+    form_columns = ('user_id','order_date','total_amount','status','delivery_address')
 
-admin = Admin(app, name="The Pantry Control Panel",
-              index_view=MyAdminIndexView())
+admin = Admin(app, name="The Pantry Control Panel", template_mode='bootstrap4',
+              index_view=MyAdminIndexView()
+              )
 admin.add_view(Controller(Users, db.session))
 admin.add_view(ProductModelView(Products, db.session))
 admin.add_view(Controller(Category, db.session))
 admin.add_view(CartItemController(CartItem, db.session))
-admin.add_view(ModelView(OrderItem, db.session))
-admin.add_view(ModelView(Orders, db.session))
+admin.add_view(OrderItemsModelController(OrderItem, db.session))
+admin.add_view(OrderItemController(Orders, db.session))
 
 path = os.path.join(os.path.dirname(__file__), 'static/img')
 admin.add_view(FileAdmin(path, '/static/img/', name='Static Files'))
@@ -533,4 +545,5 @@ def logout():
 
 if __name__ == '__main__':
     app.debug = True
-    app.run()
+    # app.run()
+    app.run(debug=True, host = 'localhost' , port = '8080')
