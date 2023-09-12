@@ -206,13 +206,6 @@ path = os.path.join(os.path.dirname(__file__), 'static/img')
 admin.add_view(FileAdmin(path, '/static/img/', name='Static Files'))
 
 
-# @app.route('/admin', methods=['GET','POST'])
-# @login_required
-# def admin():
-#     # if current_user.is_admin == True:
-#         return "Hi"
-
-
 @app.route('/admin-login', methods=['GET', 'POST'])
 def admin_login():
     logout_user()
@@ -385,6 +378,11 @@ def add_product_to_cart():
                     user_id=current_user.id, product_id=_code, quantity=_quantity)
                 db.session.add(new_cart_item)
 
+            if _quantity > product.quantity:
+                print("Insufficent quantity")
+                flash('Insufficient inventory!', 'error')
+                return redirect(url_for('index'))
+
             db.session.commit()
             flash('Item added to cart successfully!', 'success')
             return redirect(url_for('index'))
@@ -424,36 +422,46 @@ def remove_from_cart(item_id):
 @app.route('/Checkout', methods=['POST', 'GET'])
 @login_required
 def Checkout():
- 
+    # wallet balance
+    user = Users.query.get(current_user.id)
+    wallet = user.wallet
     cart_items = CartItem.query.filter_by(user_id=current_user.id).all()
-    if cart_items:
-        order = Orders(
-            user_id=current_user.id,
-            total_amount=sum(cart_item.product.price * cart_item.quantity for cart_item in cart_items),
-            status=False,  # You can set the status as needed
-            # delivery_address=current_user.address  # You can set the delivery address as needed
-            delivery_address='home'# You can set the delivery address as needed
-        )
-        db.session.add(order)
+    total_amount = sum(cart_item.product.price * cart_item.quantity for cart_item in cart_items)
+    if wallet >= total_amount:
+        wallet -= total_amount
+        user.wallet = wallet
         db.session.commit()
 
-        for cart_item in cart_items:
-            order_item = OrderItem(
-                order_id=order.id,  # We will assign this later
-                product_id=cart_item.product_id,
-                quantity=cart_item.quantity
+        if cart_items:
+            order = Orders(
+                user_id=current_user.id,
+                total_amount=total_amount,
+                status=False, 
+                # delivery_address=current_user.address  # You can set the delivery address as needed
+                delivery_address='home'# You can set the delivery address as needed
             )
-            db.session.add(order_item)
+            db.session.add(order)
             db.session.commit()
 
-        # Clear the cart after placing the order
-        CartItem.query.filter_by(user_id=current_user.id).delete()
-        db.session.commit()
+            for cart_item in cart_items:
+                order_item = OrderItem(
+                    order_id=order.id,  # We will assign this later
+                    product_id=cart_item.product_id,
+                    quantity=cart_item.quantity
+                )
+                db.session.add(order_item)
+                db.session.commit()
 
-        flash('Order placed successfully!', 'success')
+            # Clear the cart after placing the order
+            CartItem.query.filter_by(user_id=current_user.id).delete()
+            db.session.commit()
+
+            flash('Order placed successfully!', 'success')
+        else:
+            flash('Your cart is empty.', 'info')
+
     else:
-        flash('Your cart is empty.', 'info')
-
+        flash('No Sufficient balance')
     return redirect(url_for('index'))
 
 
