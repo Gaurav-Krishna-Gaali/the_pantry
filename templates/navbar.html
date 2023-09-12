@@ -23,6 +23,10 @@
                     <div class="dropdown-menu">
                         {% if user %}
                         <a class="dropdown-item" href="">My Wallet : {{ user.wallet }} </a>
+                        <a class="dropdown-item" data-bs-toggle="offcanvas" href="#offcanvasExample" role="button"
+                            aria-controls="offcanvasExample">
+                            My Orders
+                        </a>
                         <a class="dropdown-item" href="{{ url_for('logout')}}">Logout</a>
                         <a class="dropdown-item" href="{{ url_for('logout')}}">Profile</a>
                         {% else %}
@@ -30,6 +34,7 @@
                         <a class="dropdown-item" href="{{ url_for('add_user') }}">Register</a>
                         {% endif %}
                         <div class="dropdown-divider"></div>
+
                         <a class="dropdown-item" href="/admin">Admin</a>
                     </div>
 
@@ -106,5 +111,41 @@
                 <a class="btn btn-success" href="{{ url_for('Checkout') }}">Place Order</a>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- My orders tab -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasExampleLabel">My Orders</h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <table class="table table-hover">
+            <p class="text-success text-center">Delivered</p>
+            <tbody>
+                {% for order in delivered %}
+                <tr class="table-success">
+                    <th scope="row">{{order.name}}</th>
+                    <td>{{ order.product_name }}</td>
+                    <td>{{ order.quantity }}</td>
+                    <td>{{ order.product_price }}</td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+        <table class="table table-hover">
+            <p class="text-warning text-center">Upcoming</p>
+            <tbody>
+                {% for order in upcoming %}
+                <tr class="table-warning">
+                    <th scope="row">{{order.name}}</th>
+                    <td>{{ order.product_name }}</td>
+                    <td>{{ order.quantity }}</td>
+                    <td>{{ order.product_price }}</td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
     </div>
 </div>
