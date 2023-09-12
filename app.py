@@ -80,6 +80,7 @@ class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
+    image = db.Column(db.String(255), nullable=True)
     products = db.relationship('Products', backref='category', lazy='dynamic')
 
     def __repr__(self):
@@ -87,10 +88,6 @@ class Category(db.Model):
 
     def __str__(self):
         return self.name
-
-class Demo(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    f = db.Column(db.BLOB, nullable=False)
 
 # Model for cart
 class CartItem(db.Model):
@@ -262,32 +259,66 @@ def cart_items_total(cart):
     print(_total)
     return _total
 
+def Myorders():
+    upcoming_orders = []
+    delivered_orders = []
+    order_data = db.session.query(Orders, OrderItem, Products)\
+    .join(OrderItem, Orders.id == OrderItem.order_id)\
+    .join(Products, OrderItem.product_id == Products.id)\
+    .filter(Orders.user_id == current_user.id)\
+    .all()
+    print(order_data)
 
-# example
-@app.route('/ex', methods=['GET', 'POST'])
-def ex():
-    username = None
-    user = None
-    exform = RegistrationForm()
-    if exform.validate_on_submit():
-        user = Users.query.filter_by(email=exform.email.data).first()
-        if user is None:
-            # hashing password
-            hashed_pw = generate_password_hash(
-                exform.password_hash.data, "sha256")
-            user = Users(username=exform.username.data,
-                         email=exform.email.data, password_hash=hashed_pw)
-            db.session.add(user)
-            db.session.commit()
-        username = exform.username.data
-        exform.username.data = ''
-        exform.email.data = ''
-        exform.password_hash.data = ''
+    for order, order_item, product in order_data:
+    # Access the data from each table
+        order_id = order.id
+        order_date = order.order_date
+        total_amount = order.total_amount
+        status = order.status
+        delivery_address = order.delivery_address
 
-        flash("User added Succesful")
-    exform = ExForm()
-    display_prod = False
-    return render_template('checkout/checkout.html')
+        order_item_id = order_item.id
+        quantity = order_item.quantity
+
+        product_id = product.id
+        product_name = product.name
+        product_description = product.description
+        product_price = product.price
+
+        order_object = {
+            "order_id": order_id,
+            "order_date": order_date,
+            "total_amount": total_amount,
+            "status": status,
+            "delivery_address": delivery_address,
+            "order_item_id": order_item_id,
+            "quantity": quantity,
+            "product_id": product_id,
+            "product_name": product_name,
+            "product_description": product_description,
+            "product_price": product_price
+        }
+
+        if status == False:
+            upcoming_orders.append(order_object)
+        else:
+            delivered_orders.append(order_object)
+
+        # Display the data in "My Orders"
+        # print(f"Order ID: {order_id}")
+        # print(f"Order Date: {order_date}")
+        # print(f"Total Amount: {total_amount}")
+        # print(f"Status: {status}")
+        # print(f"Delivery Address: {delivery_address}")
+        # print(f"Order Item ID: {order_item_id}")
+        # print(f"Quantity: {quantity}")
+        # print(f"Product ID: {product_id}")
+        # print(f"Product Name: {product_name}")
+        # print(f"Product Description: {product_description}")
+        # print(f"Product Price: {product_price}")
+        # print("---")
+
+    return upcoming_orders, delivered_orders
 
 
 def remove_from_cart(item_id):
@@ -301,62 +332,38 @@ def remove_from_cart(item_id):
     if item_in_cart.user_id == current_user.id:
         db.session.delete(item_in_cart)
         db.session.commit()
-
     return "done"
 
+def get_common_data():
+    upcoming, delivered = Myorders()
+    addtocart = Addtocart()
+    order = Cart_crud()
+    user = None
+    allproducts = Products.query.all()
+    categories = Category.query.all()
+    products_in_cart = cart_items_costs()
+    products_total = cart_items_total(products_in_cart)
+    print(products_in_cart)
+    sum_products = len(products_in_cart)
+
+    if current_user.is_authenticated:
+        user = current_user
+    print(user.id)
+    remove_items = None
+    return upcoming, delivered, addtocart, order, user, allproducts, categories, products_in_cart, products_total, sum_products, remove_items
 
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
-    addtocart = Addtocart()
-    order = Cart_crud()
-    user = None
-    products = Products.query.all()
-    products_in_cart = cart_items_costs()
-    products_total = cart_items_total(products_in_cart)
+    upcoming, delivered, addtocart, order, user, allproducts, categories, products_in_cart, products_total, sum_products, remove_items = get_common_data()
 
-    # for cart_item, product in cart_items_with_products:
-    #  print(f"Product: {product.name}, Quantity: {cart_item.quantity}")
-
-    if current_user.is_authenticated:
-        user = current_user
-    # wallet = Users.query.get(current_user.wallet)
-    print(user.id)
-    remove_items = None
     display_prod = True
-    return render_template('base.html', user=user, order=order,  display_prod=display_prod, products_total=products_total, cart_products=products_in_cart, form=addtocart, products=products, remove_items=remove_items)
+    categories_flag = False
+    return render_template('base.html', user=user, upcoming = upcoming, delivered = delivered, order=order, categories=categories , categories_flag=categories_flag, sum_products = sum_products, display_prod=display_prod, products_total=products_total, cart_products=products_in_cart, form=addtocart, allproducts=allproducts, remove_items=remove_items)
 
 
 @app.route('/add', methods=['POST'])
 @login_required
-# def add_product_to_cart():
-    # try:
-    #     _quantity = int(request.form['quantity'])
-    #     _code = request.form['code']
-    #     # vaidation
-    #     if _quantity and _code and request.method == 'POST':
-    #         product = Products.query.get_or_404(_code)
-    #         print(product)
-    #         # quantity = int(request.form.get('quantity'))
-    #         item_in_cart = CartItem.query.filter_by(
-    #             user_id=current_user.id, product_id=_code).first()
-
-    #         if item_in_cart:
-    #             item_in_cart.quantity += _quantity
-    #         else:
-    #             new_cart_item = CartItem(
-    #                 user_id=current_user.id, product_id=_code, quantity=_quantity)
-    #             db.session.add(new_cart_item)
-
-    #         db.session.commit()
-    #         flash('Item added to cart successfully!', 'success')
-    #         return redirect(url_for('index'))
-    #     else:
-    #         return "Error while adding item to cart"
-
-    # except Exception as e:
-    #     print(e)
-    # return redirect(url_for('index'))
 def add_product_to_cart():
     try:
         _quantity = int(request.form['quantity'])
@@ -485,6 +492,19 @@ def Users_pwd():
     return render_template('user.html', password=password, email=email, pw_to_check=pw_to_check, form=form, passed=passed)
 
 
+@app.route('/category/<int:category_id>', methods=['GET', 'POST'])
+@login_required
+def category_route(category_id):
+    category = Category.query.get(category_id)
+    products = Products.query.filter_by(category_id=category_id).all()
+    print(category.image)
+
+    upcoming, delivered, addtocart, order, user, allproducts, categories, products_in_cart, products_total, sum_products, remove_items = get_common_data()
+
+    display_prod = False
+    categories_flag = True
+    return render_template("cat.html", category=category, allproducts=allproducts,user=user, upcoming = upcoming, categories_flag = categories_flag, delivered = delivered, order=order , sum_products = sum_products, display_prod=display_prod, products_total=products_total, cart_products=products_in_cart, form=addtocart, products=products, remove_items=remove_items)
+
 @app.route('/register', methods=['GET', 'POST'])
 def add_user():
     username = None
@@ -550,8 +570,7 @@ def logout():
 #     print(username, email)
 #     return render_template('register.html',form=rform)
 
-
 if __name__ == '__main__':
     app.debug = True
-    # app.run()
-    app.run(debug=True, host = 'localhost' , port = '8080')
+    app.run()
+    # app.run(debug=True, host = 'localhost' , port = '8080')

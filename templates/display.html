@@ -8,7 +8,7 @@
 </head>
 
 <body>
-    <div class="container mt-5">
+    <div class="container mt-2">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         {% for category, message in messages %}
@@ -33,55 +33,77 @@
         {% endwith %}
         <h1>Categories</h1>
         <div class="row">
-            {% for category in categories %}
-            <div class="col-md-4">
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ category.name }}</h5>
-                        <p class="card-text">{{ category.description }}</p>
+            <ul class="ccards">
+                {% for category in categories %}
+                <li class="ccard">
+                    <img class="rounded-circle shadow-4-strong" alt="avatar2" src={{category.image}} />
+                    <div>
+                        <h3 class="ccard-title">{{ category.name}}</h3>
+
                     </div>
-                </div>
-            </div>
-            {% endfor %}
+                    <div class="ccard-link-wrapper">
+                        <a class="ccard-link" href="{{ url_for('category_route', category_id= category.id) }}">Learn
+                            More</a>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
         </div>
 
-        <h1>Products</h1>
-        <div class="row">
-            {% for product in products %}
-            <div class="col-md-4">
-                <div class="card mb-3">
-                    <img src="{{ product.image }}" class="card-img-top" alt="Product Image">
-                    <div class="card-body">
-                        <h5 class="card-title text-center">{{ product.name }}</h5>
-                        <p class="text-muted mb-4 text-center">{{ product.description }}</p>
-                        <div class="d-flex justify-content-between">
-                            <span>In Stock:</span><span>{{ product.quantity }}</span>
+        <section class="py-5 bg-light">
+            <div class="container px-4 px-lg-5 mt-2">
+                <h2 class="fw-bolder mb-4">All products</h2>
+                <div class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center">
+                    {% for product in allproducts %}
+                    <div class="col mb-5">
+                        <div class="card h-100">
+                            <!-- Product image-->
+                            <img class="card-img-top" src={{ product.image }} alt="..." />
+                            <!-- Product details-->
+                            <div class="card-body p-4">
+                                <div class="text-center">
+                                    <!-- Product name-->
+                                    <h5 class="fw-bolder">{{ product.name }}</h5>
+                                    <!-- Product price-->
+                                    ${{ product.price }}
+                                </div>
+                            </div>
+                            <!-- Product actions-->
+                            <form action="/add" method="post">
+                                <input type="hidden" name="code" value={{product.id}} />
+                                
+                                <div class="d-flex justify-content-evenly align-items-center">
+                                    <span>Quantity</span><span>
+                                        <input type="text" name="quantity" value='1' class="form-control text-center me-3"
+                                            size="2" /></span>
+                                </div>
+                                <!-- {{form.submit(class="btn btn-outline-secondary")}} -->
+                                <div class="d-flex justify-content-evenly total align-items-center font-weight-bold mt-4">
+                                    <span>Price:</span><span> ${{ product.price }}</span>
+                                </div>
+                                <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+                                    <div class="text-center">
+                                        <button type="type" class="btn btn-outline-dark mt-auto">Add to
+                                        cart</button>
+                                    </div>
+                                </div>
+                                   
+                            </form>
+                            
                         </div>
-                        <form action="/add" method="post">
-                            <input type="hidden" name="code" value={{product.id}} />
-                            <div class="d-flex justify-content-between">
-                                <span>Quantity</span><span><input type="text" name="quantity" value='1'
-                                        size="2" /></span>
-                            </div>
-                            <!-- {{form.submit(class="btn btn-outline-secondary")}} -->
-                            <div class="d-flex justify-content-between total font-weight-bold mt-4">
-                                <span>Price:</span><span> ${{ product.price }}</span>
-                            </div>
-                            <button type="type" class="btn btn-outline-secondary justify-content-center">Add to
-                                cart</button>
-                        </form>
-
                     </div>
+                    {% endfor %}
                 </div>
             </div>
-            {% endfor %}
-        </div>
+        </section>
     </div>
 
     <!-- Add Bootstrap JS and jQuery CDN links -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href='static/css/slider.css' type='text/css'>
+
 </body>
 
 </html>
