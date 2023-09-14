@@ -1,6 +1,3 @@
-<!DOCTYPE html>
-<html>
-
 <head>
     <title>Grocery Shopping App</title>
     <!-- Add Bootstrap CSS CDN link -->
@@ -31,7 +28,10 @@
         {% endfor %}
         {% endif %}
         {% endwith %}
-        <h1>Categories</h1>
+        {% if search_flag %}
+        <h2>Showing results for {{q}}</h2>
+        {% endif %}
+        <h2 class="fw-bolder mb-4">Categories</h2>
         <div class="row">
             <ul class="ccards">
                 {% for category in categories %}
@@ -42,18 +42,17 @@
 
                     </div>
                     <div class="ccard-link-wrapper">
-                        <a class="ccard-link" href="{{ url_for('category_route', category_id= category.id) }}">Learn
-                            More</a>
+                        <a class="ccard-link" href="{{ url_for('category_route', category_id= category.id) }}">Shop now</a>
                     </div>
                 </li>
                 {% endfor %}
             </ul>
         </div>
 
-        <section class="py-5 bg-light">
+        <section class="py-5 ">
             <div class="container px-4 px-lg-5 mt-2">
                 <h2 class="fw-bolder mb-4">All products</h2>
-                <div class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center">
+                <div class="row gx-4 gx-lg-5 row-cols-1 row-cols-md-3 row-cols-sm-2 row-cols-xl-4 justify-content-center">
                     {% for product in allproducts %}
                     <div class="col mb-5">
                         <div class="card h-100">
@@ -69,17 +68,26 @@
                                 </div>
                             </div>
                             <!-- Product actions-->
+                            {%if product.quantity == 0 %}
+                            <div class="alert alert-dismissible alert-danger">
+                                <strong>Oh snap!</strong> <a href="#" class="alert-link">We're are out of stock</a> 
+                              </div>
+                            {%else%}
                             <form action="/add" method="post">
                                 <input type="hidden" name="code" value={{product.id}} />
                                 
                                 <div class="d-flex justify-content-evenly align-items-center">
+                                    <span>In Stock:</span>
+                                    <span>{{ product.quantity }}</span>
+                                </div>
+                                <div class="d-flex justify-content-evenly align-items-center mb-2">
                                     <span>Quantity</span><span>
                                         <input type="text" name="quantity" value='1' class="form-control text-center me-3"
                                             size="2" /></span>
                                 </div>
                                 <!-- {{form.submit(class="btn btn-outline-secondary")}} -->
                                 <div class="d-flex justify-content-evenly total align-items-center font-weight-bold mt-4">
-                                    <span>Price:</span><span> ${{ product.price }}</span>
+                                    <span>Price:</span><span> ₹{{ product.price }}</span>
                                 </div>
                                 <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
                                     <div class="text-center">
@@ -89,6 +97,7 @@
                                 </div>
                                    
                             </form>
+                            {% endif %}
                             
                         </div>
                     </div>

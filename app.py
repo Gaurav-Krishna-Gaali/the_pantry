@@ -370,6 +370,22 @@ def index():
     categories_flag = False
     return render_template('base.html', user=user, upcoming = upcoming, delivered = delivered, order=order, categories=categories , categories_flag=categories_flag, sum_products = sum_products, display_prod=display_prod, products_total=products_total, cart_products=products_in_cart, form=addtocart, allproducts=allproducts, remove_items=remove_items)
 
+@app.route('/search', methods=['GET', 'POST'])
+def search():
+    upcoming, delivered, addtocart, order, user, allproducts, categories, products_in_cart, products_total, sum_products, remove_items = get_common_data()
+
+    q = request.form.get('query')  # Get the search query from the form data
+    print(q)
+
+    # results = Products.query.filter(Products.name.icontains(q)).all() | 1
+    # print(results)
+    print(q)
+    allproducts = Products.query.filter(Products.name.ilike(f'%{q}%')).all()
+    categories = Category.query.filter(Category.name.ilike(f'%{q}%')).all()
+    display_prod = True
+    categories_flag = False
+    search_flag = True
+    return render_template('search.html', allproducts=allproducts, q=q,user=user, upcoming = upcoming, delivered = delivered, order=order, categories=categories , categories_flag=categories_flag, sum_products = sum_products, display_prod=display_prod, products_total=products_total, cart_products=products_in_cart, form=addtocart, remove_items=remove_items )
 
 @app.route('/add', methods=['POST'])
 @login_required
@@ -461,11 +477,16 @@ def Checkout():
 
             for cart_item in cart_items:
                 order_item = OrderItem(
-                    order_id=order.id,  # We will assign this later
+                    order_id=order.id,  
                     product_id=cart_item.product_id,
                     quantity=cart_item.quantity
                 )
                 db.session.add(order_item)
+                db.session.commit()
+                
+                # reducing inventory
+                product = Products.query.get(cart_item.product_id)
+                product.quantity -= cart_item.quantity
                 db.session.commit()
 
             # Clear the cart after placing the order
