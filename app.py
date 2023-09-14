@@ -298,6 +298,51 @@ def remove_from_cart(item_id):
         db.session.commit()
     return "done"
 
+def Myorders():
+    upcoming_orders = []
+    delivered_orders = []
+    order_data = db.session.query(Orders, OrderItem, Products)\
+    .join(OrderItem, Orders.id == OrderItem.order_id)\
+    .join(Products, OrderItem.product_id == Products.id)\
+    .filter(Orders.user_id == current_user.id)\
+    .all()
+    print(order_data)
+
+    for order, order_item, product in order_data:
+    # Access the data from each table
+        order_id = order.id
+        order_date = order.order_date
+        total_amount = order.total_amount
+        status = order.status
+        delivery_address = order.delivery_address
+
+        order_item_id = order_item.id
+        quantity = order_item.quantity
+
+        product_id = product.id
+        product_name = product.name
+        product_description = product.description
+        product_price = product.price
+
+        order_object = {
+            "order_id": order_id,
+            "order_date": order_date,
+            "total_amount": total_amount,
+            "status": status,
+            "delivery_address": delivery_address,
+            "order_item_id": order_item_id,
+            "quantity": quantity,
+            "product_id": product_id,
+            "product_name": product_name,
+            "product_description": product_description,
+            "product_price": product_price
+        }
+
+        if status == False:
+            upcoming_orders.append(order_object)
+        else:
+            delivered_orders.append(order_object)
+    return upcoming_orders, delivered_orders
 def get_common_data():
     upcoming, delivered = Myorders()
     addtocart = Addtocart()
