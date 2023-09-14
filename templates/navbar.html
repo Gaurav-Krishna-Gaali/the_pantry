@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg  " data-bs-theme="light"
+<nav class="navbar navbar-expand-lg  sticky-top  bg-white data-bs-theme=" light"
     style="border-bottom: 1px solid grey ; padding: 10px; padding-bottom: 20px;">
     <div class="container-fluid">
         <a class="navbar-brand" href="/">
@@ -10,28 +10,23 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarColor01">
             <ul class="navbar-nav me-auto justify-content-between w-100">
-                <li class="nav-item">
-                    <a class="nav-link active" href="#">Home
-                        <span class="visually-hidden">(current)</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Features</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{url_for('add_user')}}">Add User</a>
-                </li>
-
 
                 <form class=" d-flex w-100">
                     <input class="form-control me-sm-2" type="search" placeholder="Search">
                     <button class="btn btn-success my-2 my-sm-0" type="submit">Search</button>
                 </form>
+
+
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button"
                         aria-haspopup="true" aria-expanded="false">Profile</a>
                     <div class="dropdown-menu">
                         {% if user %}
+                        <a class="dropdown-item" href="">My Wallet : {{ user.wallet }} </a>
+                        <a class="dropdown-item" data-bs-toggle="offcanvas" href="#offcanvasExample" role="button"
+                            aria-controls="offcanvasExample">
+                            My Orders
+                        </a>
                         <a class="dropdown-item" href="{{ url_for('logout')}}">Logout</a>
                         <a class="dropdown-item" href="{{ url_for('logout')}}">Profile</a>
                         {% else %}
@@ -39,56 +34,129 @@
                         <a class="dropdown-item" href="{{ url_for('add_user') }}">Register</a>
                         {% endif %}
                         <div class="dropdown-divider"></div>
+
                         <a class="dropdown-item" href="/admin">Admin</a>
                     </div>
 
-                <li><button type="button" class="btn btn-outline-success" data-bs-toggle="modal"
-                        data-bs-target="#myModal">Cart</button></li>
-
+                <li><button type="button"
+                        class="btn btn-outline-success d-flex justify-content-center align-items-center"
+                        data-bs-toggle="modal" data-bs-target="#myModal">
+                        <i class="bi-cart-fill me-1"></i>
+                        Cart
+                        <span class="badge bg-success text-white ms-1 rounded-pill">{{ sum_products }}</span></button>
+                </li>
                 </li>
 
-                <!-- Modal View -->
-                <div class="modal" id="myModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true">
-                    <div class="modal-dialog" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">
-                                    Your Cart items
-                                </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true"></span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <ul class="list-unstyled">
-                                    <!--  -->
-                                    {% for product in cart_products %}
-                                    <div class="col-md-6">
-                                        <div class="card mb-3">
-                                            <img src="{{ product.product_image }}" class="card-img-top"
-                                                alt="Product Image">
-                                            <div class="card-body">
-                                                <h5 class="card-title">{{ product.product_name }}</h5>
-                                                <p class="card-text">{{ product.product_desc }}</p>
-                                                <p class="card-text">Price: ${{ product.product_price }}</p>
-                                                <p class="card-text">Quantity: {{ product.quantity }}</p>
-                                                <p class="card-text">Subtotal: {{ product.subtotal }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-
-                                </ul>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
             </ul>
-
         </div>
     </div>
+
 </nav>
+
+<!-- Modal View -->
+<div class="modal Zip" id="myModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Your Cart items
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">Product</th>
+                            <th scope="col">Title</th>
+                            <th scope="col">Quantity</th>
+                            <th scope="col"></th>
+                            <th scope="col">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in cart_products %}
+                        <tr class="table-light">
+                            <th scope="row">
+                                {% if categories_flag %}
+                                <img src="/{{ product.product_image }}" class="card-img-top"
+                                    alt="Product Image"></th>
+                                {% else %}
+                                <img src="{{ product.product_image }}" class="card-img-top"
+                                    alt="Product Image"></th>
+                                {% endif %}
+                            <td>
+                                <h5 class="card-title">{{ product.product_name }}</h5>
+                            </td>
+                            <td>
+                                <p class="" value="{{ product.quantity }}" style="width: 50%">{{ product.quantity }}</p>
+                                <!-- {{ product.quantity }} -->
+                            </td>
+                            <td>
+                                <form method="POST"
+                                    action="{{ url_for('remove_from_cart', item_id= product.product_id) }}">
+                                    <button type="submit" class="btn-close bg-red"></button>
+                                </form>
+                            </td>
+                            <td>
+                                <p class="card-text">₹{{ product.subtotal }}</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="">
+                            <th scope="row"></th>
+                            <td></td>
+                            <td>Grand Total</td>
+                            <td>
+                                <bold> </bold>
+                            </td>
+                            <td>₹{{products_total}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">Close</button>
+                <a class="btn btn-success" href="{{ url_for('Checkout') }}">Place Order</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- My orders tab -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasExampleLabel">My Orders</h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <table class="table table-hover">
+            <p class="text-success text-center">Delivered</p>
+            <tbody>
+                {% for order in delivered %}
+                <tr class="table-success">
+                    <th scope="row">{{order.name}}</th>
+                    <td>{{ order.product_name }}</td>
+                    <td>{{ order.quantity }}</td>
+                    <td>{{ order.product_price }}</td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+        <table class="table table-hover">
+            <p class="text-warning text-center">Upcoming</p>
+            <tbody>
+                {% for order in upcoming %}
+                <tr class="table-warning">
+                    <th scope="row">{{order.name}}</th>
+                    <td>{{ order.product_name }}</td>
+                    <td>{{ order.quantity }}</td>
+                    <td>{{ order.product_price }}</td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -3,27 +3,50 @@ from wtforms import StringField, PasswordField, SubmitField, EmailField, Boolean
 from wtforms.validators import DataRequired, EqualTo, Length
 from wtforms.widgets import PasswordInput
 
+
 class RegistrationForm(FlaskForm):
     username = StringField("What's your name", validators=[DataRequired()])
-    email = EmailField('Email',validators=[DataRequired()])
-    password_hash = PasswordField('Password', validators=[DataRequired(), EqualTo('password_hash2', message='Password must Match!')])
-    password_hash2 = PasswordField('Confirm Password', validators=[DataRequired()])
+    email = EmailField('Email', validators=[DataRequired()])
+    password_hash = PasswordField('Password', validators=[DataRequired(), EqualTo(
+        'password_hash2', message='Password must Match!')])
+    password_hash2 = PasswordField(
+        'Confirm Password', validators=[DataRequired()])
     submit = SubmitField('Register')
 
+
+class ExForm(FlaskForm):
+    username = StringField("What's your name", validators=[DataRequired()])
+    email = EmailField('Email', validators=[DataRequired()])
+    password_hash = PasswordField('Password', validators=[DataRequired(), EqualTo(
+        'password_hash2', message='Password must Match!')])
+    password_hash2 = PasswordField(
+        'Confirm Password', validators=[DataRequired()])
+    submit = SubmitField('Register')
+
+
 class PasswordForm(FlaskForm):
-    email = EmailField('Email',validators=[DataRequired()])
+    email = EmailField('Email', validators=[DataRequired()])
     password_hash = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField()
 
+
 class LoginForm(FlaskForm):
-    email = EmailField('Email',validators=[DataRequired()])
-    password = StringField('Password',widget= PasswordInput() ,validators=[DataRequired()])
+    email = EmailField('Email', validators=[DataRequired()])
+    password = StringField(
+        'Password', widget=PasswordInput(), validators=[DataRequired()])
     submit = SubmitField('Submit')
+
+
 class AdminForm(FlaskForm):
-    email = EmailField('Email',validators=[DataRequired()])
-    password = StringField('Password',widget= PasswordInput() ,validators=[DataRequired()])
+    email = EmailField('Email', validators=[DataRequired()])
+    password = StringField(
+        'Password', widget=PasswordInput(), validators=[DataRequired()])
     submit = SubmitField('Submit')
+
+
 class Addtocart(FlaskForm):
     submit = SubmitField('Add to cart')
 
 
+class Cart_crud(FlaskForm):
+    submit = SubmitField('Place Order')
