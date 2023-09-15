@@ -260,31 +260,6 @@ def cart_items_total(cart):
     return _total
 
 
-# example
-@app.route('/ex', methods=['GET', 'POST'])
-def ex():
-    username = None
-    user = None
-    exform = RegistrationForm()
-    if exform.validate_on_submit():
-        user = Users.query.filter_by(email=exform.email.data).first()
-        if user is None:
-            # hashing password
-            hashed_pw = generate_password_hash(
-                exform.password_hash.data, "sha256")
-            user = Users(username=exform.username.data,
-                         email=exform.email.data, password_hash=hashed_pw)
-            db.session.add(user)
-            db.session.commit()
-        username = exform.username.data
-        exform.username.data = ''
-        exform.email.data = ''
-        exform.password_hash.data = ''
-
-    return upcoming_orders, delivered_orders
-    return upcoming_orders, delivered_orders
-
-
 def remove_from_cart(item_id):
     # _code = request.form['code']
     # cart_item = CartItem.query.get_or_404(item_id)
@@ -483,7 +458,7 @@ def Checkout():
                 )
                 db.session.add(order_item)
                 db.session.commit()
-                
+
                 # reducing inventory
                 product = Products.query.get(cart_item.product_id)
                 product.quantity -= cart_item.quantity
@@ -501,25 +476,6 @@ def Checkout():
         flash('No Sufficient balance')
     return redirect(url_for('index'))
 
-
-@app.route('/Users_pwd', methods=['GET', 'POST'])
-def Users_pwd():
-    email = None
-    password = None
-    pw_to_check = None
-    passed = None
-    form = PasswordForm()
-    # Validation
-    if form.validate_on_submit():
-        email = form.email.data
-        password = form.password_hash.data
-        form.password, form.email = '', ''
-
-        pw_to_check = Users.query.filter_by(email=email).first()
-        # check hashed password
-        passed = check_password_hash(pw_to_check.password_hash, password)
-
-    return render_template('user.html', password=password, email=email, pw_to_check=pw_to_check, form=form, passed=passed)
 
 
 @app.route('/category/<int:category_id>', methods=['GET', 'POST'])
@@ -587,18 +543,6 @@ def logout():
     flash("You have been Logged out!")
     return redirect(url_for('index'))
 
-# @app.route('/register', methods=['POST','GET'])
-# def Register():
-#     rform = RegistrationForm()
-#     # validation
-#     if rform.validate_on_submit():
-#         username = rform.username.data
-#         email = rform.email.data
-#         password = rform.password.data
-#         confirm_password = rform.confirm_password.data
-#         flash("Login Succesful")
-#     print(username, email)
-#     return render_template('register.html',form=rform)
 
 if __name__ == '__main__':
     app.debug = True
