@@ -9,7 +9,7 @@
                         alt="..." /></div>
                 <div class="col-md-6">
                     <div class="small mb-1">Categories: THE PANTRY</div>
-                    <h1 class="display-5 fw-bolder">Shop item template</h1>
+                    <h1 class="display-5 fw-bolder">{{category.name}}</h1>
                     <p class="lead">{{category.description}}</p>
 
                 </div>
@@ -32,7 +32,7 @@
                                     <!-- Product name-->
                                     <h5 class="fw-bolder">{{ product.name }}</h5>
                                     <!-- Product price-->
-                                    ${{ product.price }}
+                                    ₹{{ product.price }}
                                 </div>
                             </div>
                             <!-- Product actions-->
