@@ -20,9 +20,10 @@ from flask_admin import Admin, form
 from wtforms import fields, widgets
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 
 app = Flask(__name__)
-
+CORS(app)
 # Secret Key
 app.config['SECRET_KEY'] = "IITMadrasMAD1"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
