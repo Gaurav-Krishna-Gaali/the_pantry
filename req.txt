@@ -17,3 +17,4 @@ SQLAlchemy==2.0.19
 typing_extensions==4.7.1
 Werkzeug==2.3.6
 WTForms==3.0.1
+Flask-Cors==4.0.0
